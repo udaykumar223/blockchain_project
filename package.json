@@ -1,0 +1,27 @@
+{
+  "name": "land-record-verification",
+  "version": "1.0.0",
+  "description": "Secure Land Record Verification System using Blockchain",
+  "private": true,
+  "scripts": {
+    "start": "node start.js",
+    "dev": "node start.js",
+    "compile": "npx hardhat compile",
+    "test": "npx hardhat test",
+    "node": "npx hardhat node",
+    "deploy": "npx hardhat run scripts/deploy.js --network localhost",
+    "backend": "node backend/server.js",
+    "frontend": "cd frontend && npm run dev"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^4.0.0",
+    "hardhat": "^2.22.0"
+  },
+  "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^18.0.7",
+    "ethers": "^6.13.0",
+    "express": "^5.3.0",
+    "multer": "^2.4.0"
+  }
+}
