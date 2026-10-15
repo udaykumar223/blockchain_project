@@ -1,234 +1,213 @@
-# 🏠 Secure Land Record Verification System
-## Ownership Transfer Audit Using Blockchain
+# TerraVault: Blockchain-Based Land Record Verification System
 
-A blockchain-powered system that provides an additional verification and audit layer for land records. This system uses smart contracts to register properties, verify document integrity using SHA-256 hashing, and maintain an immutable ownership transfer history.
+An academic prototype of a secure, decentralized real-estate cadastre and land record verification system built with **Solidity**, **Hardhat**, **Ethers.js v6**, and **React (Vite)**.
 
-> **Disclaimer:** This is an academic project and does NOT replace official government land registries. It uses simulated/sample property records only.
+> **Academic Prototype Notice:**  
+> This system uses simulated property records for educational demonstration, research, and cryptographic title verification. It is not intended to replace statutory government land registries or official title deed registries.
 
 ---
 
-## 📋 Problem Statement
+## 1. System Overview & Core Technical Contributions
 
-Traditional land record management systems are vulnerable to:
-- **Document tampering** — paper or digital records can be altered without detection
-- **Unauthorized transfers** — ownership changes may occur without proper authorization
-- **Lack of audit trail** — no transparent history of who owned the property and when
-- **Verification difficulties** — no reliable way to verify if a document is genuine
+The system demonstrates three primary technical pillars:
 
-## 🎯 Objectives
+1. **Role-Based Ownership Validation & Dual-Control Transfers:**
+   - Property registration is strictly restricted to the authorized administrative **Registrar** (`onlyRegistrar`).
+   - Ownership transfers cannot be unilaterally executed:
+     - An ownership transfer request can **only** be initiated by the verified, currently registered owner (`msg.sender == currentOwner`).
+     - A requested transfer enters a `pendingTransfers` queue and **only** takes effect when the authorized Registrar approves the transaction (`approveTransfer`).
+     - The Registrar can also reject fraudulent or improper requests (`rejectTransfer`), returning the property to normal status.
 
-1. Provide a tamper-proof verification layer for land documents using SHA-256 hashing
-2. Store document fingerprints on a blockchain smart contract for immutability
-3. Restrict property registration and ownership transfers to an authorized registrar
-4. Maintain a complete, chronological ownership transfer history
-5. Detect any modification to registered documents instantly
+2. **Off-Chain Document Cryptographic Integrity (SHA-256):**
+   - The system utilizes the browser's native **Web Crypto API** (`crypto.subtle.digest("SHA-256", arrayBuffer)`) to generate 256-bit cryptographic fingerprints from uploaded title deeds, conveyance contracts, or surveyed parcel documents.
+   - The calculated hash is converted to Solidity `bytes32` format (`0x` + 64 hexadecimal characters).
+   - Document contents are **never** stored on the public blockchain, guaranteeing privacy, saving gas, and preventing storage bloat.
+   - Real-time comparison against on-chain hashes provides immediate visual feedback:
+     - **`VERIFIED` (Green)**: Exact match confirming bit-for-bit document integrity.
+     - **`MISMATCH` (Red)**: Discrepancy indicating document tampering, alteration, or wrong title deed.
 
-## 🏗️ Architecture
+3. **Immutable Blockchain Audit History & Chain of Custody:**
+   - Every property maintains an immutable array of `AuditRecord` structs stored directly in smart contract state.
+   - Records track the previous owner, new owner, document SHA-256 hash, action (`REGISTERED`, `TRANSFERRED`), and exact block timestamp.
+   - An open audit ledger view enables anyone to inspect the complete provenance and historical chain of title.
 
-```
-┌─────────────────────────────────────────────────────┐
-│                    Frontend (React + Vite)           │
-│   Home | Dashboard | Register | Transfer | Verify   │
-│              | History | Transactions               │
-└──────────────────────┬──────────────────────────────┘
-                       │ HTTP API (port 3000 → proxy)
-┌──────────────────────▼──────────────────────────────┐
-│              Backend (Express.js, port 5000)         │
-│   • SHA-256 hash calculation from actual file bytes  │
-│   • Input validation & error handling                │
-│   • ethers.js contract interaction                   │
-└──────────────────────┬──────────────────────────────┘
-                       │ JSON-RPC (port 8545)
-┌──────────────────────▼──────────────────────────────┐
-│         Local Blockchain (Hardhat Node)              │
-│   • LandRecordVerification.sol smart contract        │
-│   • Registrar access control (immutable)             │
-│   • Property registry, doc hashes, transfer history  │
-└─────────────────────────────────────────────────────┘
-```
+---
 
-## 🛠️ Technology Stack
+## 2. On-Chain Deployment & Configuration
 
-| Component         | Technology            |
-|-------------------|-----------------------|
-| Frontend          | React.js + Vite       |
-| Styling           | Vanilla CSS (dark mode)|
-| Backend           | Node.js + Express.js  |
-| Smart Contract    | Solidity 0.8.24       |
-| Blockchain Dev    | Hardhat               |
-| Blockchain Client | ethers.js v6          |
-| Document Hash     | SHA-256               |
-| Testing           | Hardhat + Chai + Mocha|
+| Parameter | Configuration Value |
+|---|---|
+| **Contract Name** | `LandRecordVerification` |
+| **Solidity Version** | `^0.8.20` (Compiled with `0.8.28`) |
+| **Network Name** | Hardhat Local |
+| **Network Chain ID** | `31337` (`0x7a69`) |
+| **Local RPC Endpoint** | `http://127.0.0.1:8545` |
+| **Deployed Contract Address** | `0x5FbDB2315678afecb367f032d93F642f64180aa3` |
+| **Initial Registrar (Deployer)** | `0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266` (Hardhat Account #0) |
 
-## 📁 Project Structure
+---
+
+## 3. Directory Structure
 
 ```
 blockchain_project/
-├── contracts/
-│   └── LandRecordVerification.sol    # Solidity smart contract
-├── scripts/
-│   └── deploy.js                     # Contract deployment script
-├── test/
-│   └── LandRecordVerification.test.js # Automated tests
-├── backend/
-│   ├── package.json
-│   └── server.js                     # Express API server
-├── frontend/
-│   ├── src/
-│   │   ├── components/               # Navbar, ToastContainer
-│   │   ├── pages/                    # All 7 pages
-│   │   ├── services/                 # API service layer
-│   │   ├── hooks/                    # Custom React hooks
-│   │   ├── App.jsx                   # Main application
-│   │   ├── main.jsx                  # Entry point
-│   │   └── index.css                 # Complete design system
-│   ├── index.html
-│   └── vite.config.js
-├── deployment/                        # Auto-generated on deploy
-│   ├── deployment.json               # Contract address & network
-│   └── LandRecordVerification.json   # Contract ABI
-├── hardhat.config.js
-├── package.json
-├── .env.example
-└── README.md
+├── land-record-chain/                 # Hardhat smart contract development environment
+│   ├── contracts/
+│   │   └── LandRecordVerification.sol # Core Solidity smart contract
+│   ├── scripts/
+│   │   ├── deploy.js                  # Deployment script
+│   │   ├── check_status.js            # Node & deployment verification utility
+│   │   ├── inspect_state.js           # Query on-chain events and records
+│   │   └── change_registrar.js        # Safe local script to transfer registrar role
+│   ├── test/
+│   │   └── LandRecordVerification.test.js # Automated unit tests (19 passing tests)
+│   ├── hardhat.config.js              # Hardhat configuration
+│   └── package.json
+│
+└── land-record-frontend/              # Modern React + Vite web dashboard
+    ├── src/
+    │   ├── config/
+    │   │   └── contract.js            # Centralized ABI, address, and network config
+    │   ├── context/
+    │   │   └── Web3Context.jsx        # Ethers.js v6 MetaMask state manager
+    │   ├── utils/
+    │   │   ├── crypto.js              # Web Crypto API SHA-256 hashing utilities
+    │   │   └── format.js              # Address, date, and hash formatters
+    │   ├── components/
+    │   │   ├── Navbar.jsx             # Navigation, network switch, role badge
+    │   │   └── TransactionModal.jsx   # Real-time transaction feedback dialog
+    │   ├── views/
+    │   │   ├── DashboardView.jsx      # Metrics, quick shortcuts, recent events
+    │   │   ├── RegisterPropertyView.jsx # Registrar property creation form
+    │   │   ├── PropertyDetailsView.jsx  # Search, property card, embedded history
+    │   │   ├── VerifyDocumentView.jsx   # SHA-256 upload and VERIFIED/MISMATCH check
+    │   │   ├── TransferRequestView.jsx  # Owner transfer request submission
+    │   │   ├── RegistrarPortalView.jsx  # Registrar approval / rejection portal
+    │   │   └── HistoryExplorerView.jsx  # Full audit ledger filterable by ID
+    │   ├── App.jsx                    # Application root
+    │   ├── App.css                    # Component styles and responsive design
+    │   └── index.css                  # Modern design tokens and typography
+    ├── package.json
+    └── vite.config.js
 ```
 
 ---
 
-## 🚀 Installation & Setup
+## 4. How to Run the System
 
-### Prerequisites
-- **Node.js** v18 or later
-- **npm** v8 or later
-- A modern web browser
-
-### Step 1: Install Dependencies
-
+### Step 1: Start the Local Blockchain Node
+Open a terminal in `land-record-chain/`:
 ```bash
-# Install root dependencies (Hardhat + ethers)
-npm install
-
-# Install backend dependencies
-cd backend && npm install && cd ..
-
-# Install frontend dependencies
-cd frontend && npm install && cd ..
-```
-
-### Step 2: Compile the Smart Contract
-
-```bash
-npx hardhat compile
-```
-
-### Step 3: Run Automated Tests
-
-```bash
-npx hardhat test
-```
-
-You should see all tests passing (registration, verification, transfers, authorization, history).
-
-### Step 4: Start the Local Blockchain
-
-Open **Terminal 1** and run:
-```bash
+cd land-record-chain
 npx hardhat node
 ```
-This starts a local Ethereum node at `http://127.0.0.1:8545` with pre-funded test accounts.
+*The local node will run at `http://127.0.0.1:8545` with Chain ID `31337`.*
 
-**Keep this terminal open.**
-
-### Step 5: Deploy the Smart Contract
-
-Open **Terminal 2** and run:
+### Step 2: Run Automated Contract Tests (Optional Verification)
+In another terminal in `land-record-chain/`:
 ```bash
-npx hardhat run scripts/deploy.js --network localhost
+cd land-record-chain
+npm test
 ```
-This deploys the contract and saves the address to `deployment/deployment.json`.
+*Runs 19 unit tests validating registrations, transfers, access controls, verification, and audit history.*
 
-### Step 6: Start the Backend Server
-
-In the same or another terminal:
+### Step 3: Start the React Frontend
+Open a terminal in `land-record-frontend/`:
 ```bash
-node backend/server.js
+cd land-record-frontend
+npm run dev
 ```
-The backend runs on `http://localhost:5000`.
-
-### Step 7: Start the Frontend
-
-Open **Terminal 3** and run:
-```bash
-cd frontend && npm run dev
-```
-The frontend runs on `http://localhost:3000`.
+*Visit the local URL shown in your terminal (typically `http://localhost:5173/` or `http://localhost:5174/`).*
 
 ---
 
-## 🧪 Sample Test Data
+## 5. MetaMask Configuration & Test Accounts
 
-| Property ID | Owner  | Document              |
-|-------------|--------|-----------------------|
-| P101        | Ravi   | Any PDF file          |
-| P102        | Arun   | Any different PDF     |
-| P103        | Priya  | Any other PDF         |
+### Adding Hardhat Local to MetaMask:
+- **Network Name:** `Hardhat Local`
+- **RPC URL:** `http://127.0.0.1:8545`
+- **Chain ID:** `31337`
+- **Currency Symbol:** `ETH`
 
-### Demo Procedure (7 Steps)
+### Test Accounts for Evaluation:
+You can import the following default Hardhat private keys into MetaMask:
 
-1. **Register P101** — Go to Register, enter `P101`, owner `Ravi`, upload a PDF → see blockchain confirmation
-2. **Verify original PDF** — Go to Verify, enter `P101`, upload the same PDF → see `VERIFIED`
-3. **Show hash mismatch** — Go to Verify, enter `P101`, upload a *different* PDF → see `HASH MISMATCH`
-4. **Transfer ownership** — Go to Transfer, enter `P101`, current owner `Ravi`, new owner `Arun`, upload a new PDF → see confirmation
-5. **Verify updated document** — Go to Verify, enter `P101`, upload the transfer PDF → see `VERIFIED`
-6. **View history** — Go to History, enter `P101` → see both the original registration and the transfer
-7. **Unauthorized transfer** — The smart contract rejects transfers from non-registrar wallets (tested in automated tests)
+1. **Account #0 (Authorized Registrar):**
+   - Address: `0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266`
+   - Private Key: `0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80`
+   - Role: Initial Registrar (can register properties and approve/reject transfers).
 
----
+2. **Account #1 (Citizen / Property Owner A):**
+   - Address: `0x70997970C51812dc3A010C7d01b50e0d17dc79C8`
+   - Private Key: `0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d`
+   - Role: Test citizen and initial property owner.
 
-## ⚙️ Smart Contract Details
+3. **Account #2 (Citizen / Buyer B):**
+   - Address: `0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC`
+   - Private Key: `0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a`
+   - Role: Test buyer for property transfer requests.
 
-The `LandRecordVerification` contract implements:
-
-| Feature                    | Description                                        |
-|----------------------------|----------------------------------------------------|
-| Registrar authorization    | Only deployer can register/transfer (immutable)    |
-| Property registration      | Stores property ID, owner name, document hash      |
-| Unique property IDs        | Rejects duplicate registrations                    |
-| Document hash storage      | SHA-256 hash stored on-chain (not the actual PDF)  |
-| Ownership transfers        | Updates owner and preserves transfer history        |
-| Transfer history           | Complete chronological chain of previous owners     |
-| Document verification      | Compares provided hash against stored hash          |
-| Events                     | Emits PropertyRegistered and OwnershipTransferred   |
-
-## 🔒 Security Features
-
-- **Immutable registrar** — uses `immutable` keyword; no setter function exists
-- **Access control** — `onlyRegistrar` modifier on state-changing functions
-- **Input validation** — rejects empty IDs, names, and zero hashes
-- **Owner mismatch check** — transfers require correct current owner name
-- **Server-side hashing** — SHA-256 computed from actual file bytes on the backend
-- **No private keys in frontend** — all signing happens on the backend
-
-## ⚠️ Limitations & Future Enhancements
-
-### Current Limitations
-- Uses a local Hardhat blockchain (not a public testnet or mainnet)
-- Single registrar model (no multi-signature governance)
-- Backend stores transaction log in memory (resets on server restart)
-- No user authentication or role-based access for the web interface
-- Document is hashed but not stored permanently
-
-### Future Enhancements
-- Deploy to Ethereum Sepolia testnet or Polygon Mumbai
-- Add MetaMask wallet integration for multi-party verification
-- Implement IPFS for decentralized document storage
-- Add multi-registrar governance with voting
-- Build a mobile-responsive PWA
-- Add QR code generation for property certificates
-- Implement court dispute resolution workflow
+### Safe Script to Change Registrar to Your MetaMask Address:
+If you prefer to use your own personal MetaMask address as the Registrar without importing Account #0, run this command from `land-record-chain/`:
+```bash
+npx hardhat run scripts/change_registrar.js --network localhost <YOUR_METAMASK_ADDRESS>
+```
+*This script uses the current authorized registrar (Account #0) to invoke `changeRegistrar(newRegistrar)` safely on the active contract.*
 
 ---
 
-## 📝 License
+## 6. Academic Evaluation Demo Script
 
-This project is developed for academic purposes as part of a B.Tech CSE curriculum.
+Follow these steps for a live project demonstration or grading presentation:
+
+### Phase 1: Property Registration by Registrar
+1. Connect MetaMask using **Account #0** (`0xf39F...2266`). Notice the green **👑 Registrar** badge in the navbar.
+2. Navigate to **Register Property**.
+3. Enter Property ID: `101`. Notice the live indicator displaying `✓ ID Available`.
+4. Enter Initial Owner: `0x70997970C51812dc3A010C7d01b50e0d17dc79C8` (Citizen #1).
+5. Click **Title Deed Text Input** and click **Insert Sample Title Deed** (or upload any PDF/text document).
+6. Notice the instantaneous computation of the 32-byte SHA-256 fingerprint via the Web Crypto API.
+7. Click **Register Property on Blockchain** and confirm in MetaMask.
+8. The transaction modal indicates confirmation and automatically records the title on-chain.
+
+### Phase 2: Document Verification (Verified vs. Mismatch)
+1. Navigate to **Verify Document**.
+2. Select Property `#101`. The registered on-chain hash is fetched from contract storage.
+3. In the **Academic Evaluation Quick Tests** section:
+   - Click **Test Exact Match (Verified)**: The card glows **Emerald Green** displaying `VERIFIED`. The smart contract `verifyDocument()` returns `true`.
+   - Click **Test Tampered/Altered Hash (Mismatch)**: The card glows **Rose Red** displaying `MISMATCH`. The discrepancy between registered and submitted hash is displayed side-by-side.
+
+### Phase 3: Ownership Transfer Request (Current Owner Only)
+1. Switch MetaMask account to **Account #1** (`0x7099...79C8`).
+2. Navigate to **Request Transfer**.
+3. Select Property `#101`. The banner confirms: `Ownership Validated: You are connected as the verified legal owner`.
+4. Set New Owner to **Account #2** (`0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC`).
+5. Upload or enter a conveyance agreement to generate the new document hash.
+6. Click **Submit Transfer Request to Registrar** and confirm in MetaMask.
+7. Property `#101` now displays `Transfer Pending Approval`.
+
+### Phase 4: Registrar Approval & Updated Chain of Custody
+1. Switch MetaMask back to **Account #0** (Registrar).
+2. Navigate to **Registrar Portal**. Notice the pending transfer count badge in the navbar.
+3. Review the pending transfer for Property `#101` (From Citizen #1 → To Citizen #2).
+4. Click **Approve & Transfer Title** and confirm in MetaMask.
+5. Navigate to **Search & Details** for Property `#101`:
+   - Current Legal Owner is now updated to Citizen #2 (`0x3C44...93BC`).
+   - The registered document hash has updated to the new conveyance deed hash.
+   - The **Audit Trail** timeline shows two immutable chronological events: `REGISTERED` followed by `TRANSFERRED`.
+6. Navigate to **Audit Ledger** to view the system-wide chain of custody table.
+
+---
+
+## 7. Security Features & Academic Limitations
+
+### Implemented Controls:
+- **No private keys in frontend:** All signatures are securely prompted through MetaMask.
+- **Fail-safe revert handling:** User-friendly translated error messages for all Solidity reverts.
+- **Pre-flight state checks:** Frontend checks property existence and ownership before initiating transactions to protect users from unnecessary gas spend.
+- **Data persistence:** Audit records are preserved permanently in EVM storage.
+
+### Academic Limitations:
+- The prototype operates on a local single-node test blockchain (`chainId: 31337`).
+- Physical ground surveys and legal identity verification are assumed out-of-scope.
+- In production, property records would be linked to decentralized identifier (DID) credentials and statutory registry APIs.
