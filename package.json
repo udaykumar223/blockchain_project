@@ -1,0 +1,9 @@
+{
+  "name": "blockchain-land-registry",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "build": "npm --prefix land-record-frontend run build",
+    "install": "npm --prefix land-record-frontend install"
+  }
+}
