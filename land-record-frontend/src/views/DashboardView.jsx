@@ -26,6 +26,7 @@ export default function DashboardView({ setActiveTab, setSelectedPropertyId }) {
     properties,
     pendingTransfers,
     activityEvents,
+    setIsLoginModalOpen,
   } = useWeb3();
 
   // Find properties owned by the connected user
@@ -195,6 +196,30 @@ export default function DashboardView({ setActiveTab, setSelectedPropertyId }) {
               </button>
             </div>
           </div>
+
+          {/* Login Callout for Unauthenticated Visitors */}
+          {!account && (
+            <div className="glass-panel panel-padded login-callout-card" style={{ marginTop: "20px" }}>
+              <div className="login-callout-content">
+                <div className="login-callout-icon">
+                  <Key size={24} className="text-primary" />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <h4 className="login-callout-title">Connect Wallet to Manage Titles</h4>
+                  <p className="login-callout-sub">
+                    Sign in with MetaMask to view your registered properties, request ownership transfers to buyers, or register new deeds.
+                  </p>
+                </div>
+                <button
+                  className="btn btn-primary btn-sm login-callout-btn"
+                  onClick={() => setIsLoginModalOpen(true)}
+                >
+                  <Key size={14} />
+                  <span>Login with MetaMask</span>
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* User's Properties */}
           {account && (

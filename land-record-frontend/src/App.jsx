@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Web3Provider, useWeb3 } from "./context/Web3Context";
 import Navbar from "./components/Navbar";
 import TransactionModal from "./components/TransactionModal";
+import LoginModal from "./components/LoginModal";
 import DashboardView from "./views/DashboardView";
 import RegisterPropertyView from "./views/RegisterPropertyView";
 import PropertyDetailsView from "./views/PropertyDetailsView";
@@ -75,8 +76,9 @@ function AppContent() {
         )}
       </main>
 
-      {/* Transaction Modal */}
+      {/* Transaction & Login Modals */}
       <TransactionModal />
+      <LoginModal />
 
       {/* Global Academic Prototype Footer */}
       <footer className="app-footer">

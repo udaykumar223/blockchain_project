@@ -36,6 +36,8 @@ contract LandRecordVerification {
 
     mapping(uint256 => Property) public properties;
 
+    uint256[] public propertyIds;
+
     mapping(uint256 => PendingTransfer)
         public pendingTransfers;
 
@@ -84,6 +86,8 @@ contract LandRecordVerification {
             documentHash: documentHash,
             exists: true
         });
+
+        propertyIds.push(propertyId);
 
         auditHistory[propertyId].push(
             AuditRecord({
@@ -208,6 +212,15 @@ contract LandRecordVerification {
         require(properties[propertyId].exists, "Property not found");
 
         return auditHistory[propertyId].length;
+    }
+
+    // Return all registered property IDs for instant lookup in Remix & UI
+    function getAllPropertyIds() external view returns (uint256[] memory) {
+        return propertyIds;
+    }
+
+    function getPropertyCount() external view returns (uint256) {
+        return propertyIds.length;
     }
 
     // Change the registrar if needed.

@@ -22,6 +22,7 @@ export default function TransferRequestView({
   const {
     account,
     properties,
+    setIsLoginModalOpen,
     getReadOnlyContract,
     getWriteContract,
     refreshData,
@@ -412,14 +413,25 @@ export default function TransferRequestView({
 
           {/* Submit Button */}
           <div className="form-actions">
-            <button
-              type="submit"
-              className="btn btn-primary"
-              disabled={!isCurrentOwner || isPendingTransfer || !newOwner || !newDocumentHash}
-            >
-              <Send size={18} />
-              Submit Transfer Request to Registrar
-            </button>
+            {!account ? (
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={() => setIsLoginModalOpen(true)}
+              >
+                <User size={18} />
+                Login with MetaMask to Request Transfer
+              </button>
+            ) : (
+              <button
+                type="submit"
+                className="btn btn-primary"
+                disabled={!isCurrentOwner || isPendingTransfer || !newOwner || !newDocumentHash}
+              >
+                <Send size={18} />
+                Submit Transfer Request to Registrar
+              </button>
+            )}
           </div>
         </form>
       </div>

@@ -19,6 +19,7 @@ export default function RegisterPropertyView({ setActiveTab, setSelectedProperty
     account,
     registrar,
     isRegistrar,
+    setIsLoginModalOpen,
     getReadOnlyContract,
     getWriteContract,
     refreshData,
@@ -380,14 +381,25 @@ Verification Standard: SHA-256 Cryptographic Digest`;
 
           {/* Submit Button */}
           <div className="form-actions">
-            <button
-              type="submit"
-              className="btn btn-primary"
-              disabled={!isRegistrar || isHashing || !propertyId || !initialOwner || !documentHash}
-            >
-              <ShieldCheck size={18} />
-              Register Property on Blockchain
-            </button>
+            {!account ? (
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={() => setIsLoginModalOpen(true)}
+              >
+                <ShieldCheck size={18} />
+                Login with MetaMask (Registrar)
+              </button>
+            ) : (
+              <button
+                type="submit"
+                className="btn btn-primary"
+                disabled={!isRegistrar || isHashing || !propertyId || !initialOwner || !documentHash}
+              >
+                <ShieldCheck size={18} />
+                Register Property on Blockchain
+              </button>
+            )}
           </div>
         </form>
       </div>

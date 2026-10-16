@@ -20,6 +20,8 @@ export function Web3Provider({ children }) {
   const [pendingTransfers, setPendingTransfers] = useState([]);
   const [activityEvents, setActivityEvents] = useState([]);
   const [isLoadingData, setIsLoadingData] = useState(false);
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [loginError, setLoginError] = useState("");
   const [txState, setTxState] = useState({
     status: "idle", // 'idle' | 'prompt' | 'pending' | 'success' | 'error'
     hash: "",
@@ -60,17 +62,27 @@ export function Web3Provider({ children }) {
         console.warn("Could not fetch registrar:", err);
       }
 
-      // 2. Fetch all registered property IDs from events
-      const registeredFilter = contract.filters.PropertyRegistered();
-      const regEvents = await contract.queryFilter(registeredFilter, 0, "latest");
-
-      // Extract unique property IDs in descending order
+      // 2. Fetch all registered property IDs (via direct getter or fallback events)
       const propertyIdSet = new Set();
-      regEvents.forEach((ev) => {
-        if (ev.args && ev.args[0]) {
-          propertyIdSet.add(ev.args[0].toString());
-        }
-      });
+      try {
+        const ids = await contract.getAllPropertyIds();
+        ids.forEach((id) => propertyIdSet.add(id.toString()));
+      } catch {
+        // Fallback to event filter if contract does not have getAllPropertyIds
+      }
+
+      let regEvents = [];
+      try {
+        const registeredFilter = contract.filters.PropertyRegistered();
+        regEvents = await contract.queryFilter(registeredFilter, 0, "latest");
+        regEvents.forEach((ev) => {
+          if (ev.args && ev.args[0]) {
+            propertyIdSet.add(ev.args[0].toString());
+          }
+        });
+      } catch (err) {
+        console.warn("Event query filter notice:", err?.message || err);
+      }
 
       const propList = [];
       const pendingList = [];
@@ -194,15 +206,26 @@ export function Web3Provider({ children }) {
     }
   }, [getFallbackProvider]);
 
-  // Connect MetaMask
-  const connectWallet = useCallback(async () => {
+  // Disconnect / Logout
+  const logout = useCallback(() => {
+    setAccount(null);
+    setBalance("0");
+    setLoginError("");
+    localStorage.setItem("terra_user_disconnected", "true");
+  }, []);
+
+  // Login with MetaMask
+  const loginWithMetaMask = useCallback(async () => {
     if (!window.ethereum) {
-      alert("MetaMask extension not found! Please install MetaMask to interact with the blockchain.");
-      return;
+      setLoginError("MetaMask extension not found! Please install MetaMask to interact with the blockchain.");
+      setIsLoginModalOpen(true);
+      return false;
     }
 
     setIsConnecting(true);
+    setLoginError("");
     try {
+      localStorage.removeItem("terra_user_disconnected");
       const browserProvider = new ethers.BrowserProvider(window.ethereum);
       const accounts = await browserProvider.send("eth_requestAccounts", []);
       if (accounts && accounts.length > 0) {
@@ -210,13 +233,25 @@ export function Web3Provider({ children }) {
         const net = await browserProvider.getNetwork();
         setChainId(Number(net.chainId));
         await updateBalance(accounts[0]);
+        setIsLoginModalOpen(false);
+        return true;
       }
+      return false;
     } catch (err) {
-      console.error("Wallet connection failed:", err);
+      console.error("MetaMask login failed:", err);
+      if (err.code === 4001 || err.code === "ACTION_REJECTED") {
+        setLoginError("Login was cancelled in MetaMask. Please approve the connection request in your extension.");
+      } else {
+        setLoginError(err.message || "Failed to log in with MetaMask.");
+      }
+      return false;
     } finally {
       setIsConnecting(false);
     }
   }, [updateBalance]);
+
+  // Backward compatible alias
+  const connectWallet = loginWithMetaMask;
 
   // Switch or Add Hardhat Network
   const switchNetwork = useCallback(async () => {
@@ -266,6 +301,9 @@ export function Web3Provider({ children }) {
 
     // Initial silent check
     const checkInitialConnection = async () => {
+      if (localStorage.getItem("terra_user_disconnected") === "true") {
+        return; // User explicitly logged out, remain disconnected
+      }
       try {
         const browserProvider = new ethers.BrowserProvider(window.ethereum);
         const accounts = await browserProvider.send("eth_accounts", []);
@@ -320,7 +358,7 @@ export function Web3Provider({ children }) {
     return msg.substring(0, 180);
   };
 
-  const isCorrectNetwork = chainId === CHAIN_ID;
+  const isCorrectNetwork = chainId === CHAIN_ID || [31337, 11155111].includes(Number(chainId));
   const isRegistrar =
     Boolean(account && registrar && account.toLowerCase() === registrar.toLowerCase());
 
@@ -338,6 +376,12 @@ export function Web3Provider({ children }) {
         pendingTransfers,
         activityEvents,
         isLoadingData,
+        isLoginModalOpen,
+        setIsLoginModalOpen,
+        loginError,
+        setLoginError,
+        loginWithMetaMask,
+        logout,
         txState,
         setTxState,
         parseContractError,

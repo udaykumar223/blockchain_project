@@ -234,4 +234,22 @@ describe("LandRecordVerification Contract", function () {
       ).to.be.revertedWith("Only registrar");
     });
   });
+
+  describe("Property Enumeration & Lookup", function () {
+    it("Tracks registered property IDs and returns full list and count", async function () {
+      const { contract, registrar, owner1, sampleHash1 } = await loadFixture(deployFixture);
+
+      expect(await contract.getPropertyCount()).to.equal(0);
+      expect((await contract.getAllPropertyIds()).length).to.equal(0);
+
+      await contract.connect(registrar).registerProperty(601, owner1.address, sampleHash1);
+      await contract.connect(registrar).registerProperty(602, owner1.address, sampleHash1);
+
+      expect(await contract.getPropertyCount()).to.equal(2);
+      const ids = await contract.getAllPropertyIds();
+      expect(ids.length).to.equal(2);
+      expect(ids[0]).to.equal(601);
+      expect(ids[1]).to.equal(602);
+    });
+  });
 });

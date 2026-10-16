@@ -1,22 +1,40 @@
 /**
  * Blockchain and Smart Contract Configuration
+ * 
+ * To switch to Sepolia Testnet:
+ * 1. Set ACTIVE_NETWORK = 'sepolia'
+ * 2. Set CONTRACT_ADDRESS to your deployed Remix IDE contract address
  */
 
-export const CONTRACT_ADDRESS = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
-export const CHAIN_ID = 31337;
-export const CHAIN_ID_HEX = "0x7a69";
-export const RPC_URL = "http://127.0.0.1:8545";
+// Toggle between 'hardhat' (local) and 'sepolia' (live Ethereum testnet)
+export const ACTIVE_NETWORK = "hardhat"; 
 
-export const NETWORK_CONFIG = {
-  chainId: CHAIN_ID_HEX,
-  chainName: "Hardhat Local",
-  nativeCurrency: {
-    name: "Ether",
-    symbol: "ETH",
-    decimals: 18,
-  },
-  rpcUrls: [RPC_URL],
-};
+export const CONTRACT_ADDRESS =
+  (typeof window !== "undefined" && window.localStorage.getItem("TERRA_CONTRACT_ADDRESS")) ||
+  (ACTIVE_NETWORK === "sepolia" 
+    ? "0xYourSepoliaContractAddressHere" 
+    : "0x5FbDB2315678afecb367f032d93F642f64180aa3");
+
+export const CHAIN_ID = ACTIVE_NETWORK === "sepolia" ? 11155111 : 31337;
+export const CHAIN_ID_HEX = ACTIVE_NETWORK === "sepolia" ? "0xaa36a7" : "0x7a69";
+export const RPC_URL = ACTIVE_NETWORK === "sepolia" 
+  ? "https://ethereum-sepolia-rpc.publicnode.com" 
+  : "http://127.0.0.1:8545";
+
+export const NETWORK_CONFIG = ACTIVE_NETWORK === "sepolia"
+  ? {
+      chainId: "0xaa36a7",
+      chainName: "Sepolia Test Network",
+      nativeCurrency: { name: "Sepolia ETH", symbol: "ETH", decimals: 18 },
+      rpcUrls: ["https://ethereum-sepolia-rpc.publicnode.com"],
+      blockExplorerUrls: ["https://sepolia.etherscan.io"],
+    }
+  : {
+      chainId: "0x7a69",
+      chainName: "Hardhat Local",
+      nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+      rpcUrls: ["http://127.0.0.1:8545"],
+    };
 
 export const CONTRACT_ABI = [
   {
@@ -376,6 +394,32 @@ export const CONTRACT_ABI = [
         "internalType": "bool",
         "name": "",
         "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getAllPropertyIds",
+    "outputs": [
+      {
+        "internalType": "uint256[]",
+        "name": "",
+        "type": "uint256[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getPropertyCount",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
       }
     ],
     "stateMutability": "view",
